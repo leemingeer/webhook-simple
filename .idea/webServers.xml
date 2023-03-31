@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="0a5c6768-fd67-4ec3-8c6f-2d3c6cf46cca" name="178.104.227.4">
+        <fileTransfer rootFolder="/home/cloud/ming" accessType="SFTP" host="178.104.227.4" port="22" sshConfigId="d6faecd9-b994-4a7a-b805-7a21b79b31a2" sshConfig="root@178.104.227.4:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

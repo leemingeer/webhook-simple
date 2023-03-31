@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" serverName="178.104.227.4" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="178.104.227.4">
+        <serverdata>
+          <mappings>
+            <mapping deploy="webhook-sample-raw" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
