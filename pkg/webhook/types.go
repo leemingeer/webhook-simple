@@ -1,16 +1,14 @@
 package webhook
 
 import (
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"net/http"
 )
 
-
-
 type WebHookServerInt interface {
-	mutating(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse
-	validating(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse
+	mutating(ar *admissionv1.AdmissionReview) *admissionv1.AdmissionResponse
+	validating(ar *admissionv1.AdmissionReview) *admissionv1.AdmissionResponse
 	Start()
 	Stop()
 }
@@ -24,13 +22,13 @@ type WebHookServerParameters struct {
 }
 
 type webHookServer struct {
-	server *http.Server
-	sidecarConfig    *Config
+	server        *http.Server
+	sidecarConfig *Config
 }
 
 type Config struct {
-	Containers  []corev1.Container  `yaml:"containers"`
-	Volumes     []corev1.Volume     `yaml:"volumes"`
+	Containers []corev1.Container `yaml:"containers"`
+	Volumes    []corev1.Volume    `yaml:"volumes"`
 }
 
 type patchOperation struct {

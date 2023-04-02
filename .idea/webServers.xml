@@ -9,6 +9,13 @@
           </advancedOptions>
         </fileTransfer>
       </webServer>
+      <webServer id="3a7f1fe9-f3a3-4e3c-9095-f2d8ab48ee15" name="10.211.55.5" url="http://10.211.55.5">
+        <fileTransfer rootFolder="//home/parallels" accessType="SFTP" host="10.211.55.5" port="22" sshConfigId="36333d28-1e0c-47de-835c-38e20101ab67" sshConfig="root@10.211.55.5:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
     </option>
   </component>
 </project>

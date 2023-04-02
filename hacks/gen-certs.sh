@@ -1,10 +1,11 @@
 #! /bin/bash
 
+ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 WEBHOOK_NS=default
-WEBHOOK_NAME=ming-webhook
+WEBHOOK_NAME=ming-webhook-svc
 
-WEBHOOK_FILE_OUT=../deploy/webhook.yaml
-WEBHOOK_CERT_FILE_OUT=../deploy/webhook-certs.yaml
+WEBHOOK_FILE_OUT=${ROOT}/deploy/webhook.yaml
+WEBHOOK_CERT_FILE_OUT=${ROOT}/deploy/webhook-certs.yaml
 
 TMPDIR=$(mktemp -d)
 
@@ -37,7 +38,7 @@ if kubectl get ${CSR}; then
 fi
 
 # create server cert/key CSR and send it to K8s api
-cat <<EOF | kubectl create --validate=false -f -
+cat <<EOF | kubectl create -f -
 apiVersion: certificates.k8s.io/v1beta1
 kind: CertificateSigningRequest
 metadata:
@@ -83,8 +84,13 @@ kubectl -n ${WEBHOOK_NS} create secret tls \
     --dry-run=client -o yaml > ${WEBHOOK_CERT_FILE_OUT}
 
 # set the CABundle on the webhook registration
+# method1
 CA_BUNDLE=$(base64 < ${TMPDIR}/server-cert.pem  | tr -d '\n')
-sed "s/CA_BUNDLE_PLACEMENT/${CA_BUNDLE}/" ../deploy/webhook.yaml.tpl > ${WEBHOOK_FILE_OUT}
+
+# method2
+#CA_BUNDLE=$(kubectl get configmap -n kube-system extension-apiserver-authentication -o=jsonpath='{.data.client-ca-file}' | base64 | tr -d '\n')
+
+sed "s/CA_BUNDLE_PLACEMENT/${CA_BUNDLE}/" ${ROOT}/deploy/webhook.yaml.tpl > ${WEBHOOK_FILE_OUT}
 
 # clean-up
-rm -rf ${TMPDIR}
+# rm -rf ${TMPDIR}

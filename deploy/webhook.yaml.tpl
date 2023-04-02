@@ -51,11 +51,14 @@ spec:
       serviceAccountName: ming-webhook-sa
       containers:
         - name: ming-webhook-server
-          image: IMAGE_PLACEMENT
+          image: leemingeer/webhook:v1
           imagePullPolicy: IfNotPresent
           args:
-            - --tlsCertPath=/etc/webhook/certs/tls.crt
-            - --tlsKeyPath=/etc/webhook/certs/tls.key
+            - -tlsCertPath=/etc/webhook/certs/tls.crt
+            - -tlsKeyPath=/etc/webhook/certs/tls.key
+            - -logtostderr=true
+            - -port=8080
+            - -v=5
           ports:
             - name: http
               containerPort: 8080
@@ -63,11 +66,6 @@ spec:
             - name: metrics
               containerPort: 8081
               protocol: TCP
-          readinessProbe:
-            periodSeconds: 15
-            httpGet:
-              path: /healthz
-              port: metrics
           volumeMounts:
             - name: webhook-certs
               mountPath: /etc/webhook/certs
@@ -82,7 +80,7 @@ spec:
       volumes:
         - name: webhook-certs
           secret:
-            secretName: ming-webhook-certs
+            secretName: ming-webhook-svc-certs
 ---
 apiVersion: v1
 kind: Service
@@ -102,7 +100,7 @@ spec:
   selector:
     app: ming-webhook
 ---
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: ming-webhook-mutator
@@ -110,6 +108,9 @@ metadata:
     app: ming-mutator
 webhooks:
   - name: ming-mutator.default.svc.cluster.local
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    failurePolicy: Fail
     clientConfig:
       caBundle: CA_BUNDLE_PLACEMENT
       service:
@@ -119,13 +120,10 @@ webhooks:
         port: 443
     rules:
       - operations: ["CREATE"]
-        apiGroups: [""]
-        apiVersions: ["v1"]
-        resources: ["pods"]
-    sideEffects: None
-    timeoutSeconds: 5
-    reinvocationPolicy: Never
-    failurePolicy: Ignore
+        apiGroups: ["apps", "extensions", ""]
+        apiVersions: ["v1", "v1beta1"]
+        resources: ["deployments","services"]
+    timeoutSeconds: 30
     namespaceSelector:
       matchLabels:
         ming-mutator: enabled
