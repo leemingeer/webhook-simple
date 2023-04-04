@@ -2,15 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/golang/glog"
 	"github.com/leemingeer/webhook-simple/pkg/webhook"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	_ "net/http/pprof"
 )
 
 var webHook webhook.WebHookServerParameters
@@ -23,26 +19,13 @@ func init() {
 	flag.StringVar(&webHook.SidecarCfgFile, "sidecarCfgFile", "/etc/webhook-demo/config/sidecarconfig.yaml", "File containing the mutation configuration.")
 }
 
-type Pod struct {
-	Metadata struct {
-		Name        string            `json:"name"`
-		Annotations map[string]string `json:"annotations"`
-	} `json:"metadata"`
-}
-
 func main() {
 
 	// parse parameters
 	flag.Parse()
 	defer glog.Flush()
-	fmt.Println("this is fmt!")
 	glog.CopyStandardLogTo("INFO")
-	glog.Info("Begin starting")
 	glog.Flush()
-
-	go func() {
-		fmt.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
 
 	// init webhook api
 	ws, err := webhook.NewWebhookServer(webHook)

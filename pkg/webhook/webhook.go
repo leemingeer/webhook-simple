@@ -2,7 +2,6 @@ package webhook
 
 import (
 	"context"
-	"crypto/sha256"
 	"crypto/tls"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
@@ -10,7 +9,6 @@ import (
 
 	"encoding/json"
 	"fmt"
-	"github.com/ghodss/yaml"
 	"github.com/golang/glog"
 	"io/ioutil"
 	appsv1 "k8s.io/api/apps/v1"
@@ -20,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/kubernetes/pkg/apis/core/v1"
 
-	"strings"
 	"sync"
 )
 
@@ -37,12 +34,6 @@ var (
 	codecs        = serializer.NewCodecFactory(runtimeScheme)
 	deserializer  = codecs.UniversalDeserializer()
 	defaulter     = runtime.ObjectDefaulter(runtimeScheme)
-)
-
-var (
-	ignoredNamespaces = []string{
-		metav1.NamespacePublic,
-	}
 )
 
 func init() {
@@ -62,14 +53,10 @@ func NewWebhookServer(webHook WebHookServerParameters) (WebHookServerInt, error)
 
 func newWebHookServer(webHook WebHookServerParameters) (*webHookServer, error) {
 	// load tls cert/key file
-	glog.Infof("CertFile: %+v", webHook.CertFile)
-	glog.Infof("KeyFile: %+v", webHook.KeyFile)
-
 	tlsCertKey, err := tls.LoadX509KeyPair(webHook.CertFile, webHook.KeyFile)
 	if err != nil {
 		return nil, err
 	}
-	glog.Infof("tlsCertKey: %+v", tlsCertKey.Certificate)
 
 	ws := &webHookServer{
 		server: &http.Server{
@@ -78,23 +65,17 @@ func newWebHookServer(webHook WebHookServerParameters) (*webHookServer, error) {
 		},
 	}
 
-	//sidecarConfig, err := loadConfig(webHook.SidecarCfgFile)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	// add routes
 	mux := http.NewServeMux()
 	mux.HandleFunc("/mutating", ws.serve)
 	mux.HandleFunc("/validating", ws.serve)
 	ws.server.Handler = mux
-	//ws.sidecarConfig = sidecarConfig
 	return ws, nil
 }
 
 // Serve method for webhook server
 func (whsvr *webHookServer) serve(w http.ResponseWriter, r *http.Request) {
-	glog.Infof("request received %v", r)
+	glog.Infof("%v", r)
 	var body []byte
 	if r.Body != nil {
 		if data, err := ioutil.ReadAll(r.Body); err == nil {
@@ -205,16 +186,6 @@ func (whsvr *webHookServer) mutating(ar *admissionv1.AdmissionReview) *admission
 		}
 	}
 
-	// 策略设置
-	//if !mutationRequired(ignoredNamespaces, objectMeta) {
-	//	glog.Infof("Skipping validation for %s/%s due to policy check", resourceNamespace, resourceName)
-	//	return &admissionv1.AdmissionResponse{
-	//		Allowed: true,
-	//	}
-	//}
-
-	// 这是容器及其卷
-	//applyDefaultsWorkaround(whsvr.sidecarConfig.Containers, whsvr.sidecarConfig.Volumes)
 	annotations := map[string]string{admissionWebhookAnnotationStatusKey: "mutated"}
 	patchBytes, err := createPatch(availableAnnotations, annotations)
 	if err != nil {
@@ -245,70 +216,6 @@ func (whsvr *webHookServer) validating(ar *admissionv1.AdmissionReview) *admissi
 		Allowed: true,
 		Result:  result,
 	}
-}
-
-func loadConfig(configFile string) (*Config, error) {
-	data, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return nil, err
-	}
-	glog.Infof("New configuration: sha256sum %x", sha256.Sum256(data))
-
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, err
-	}
-
-	return &cfg, nil
-}
-
-func mutationRequired(ignoredList []string, metadata *metav1.ObjectMeta) bool {
-	required := admissionRequired(ignoredList, admissionWebhookAnnotationMutateKey, metadata)
-	annotations := metadata.GetAnnotations()
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
-	status := annotations[admissionWebhookAnnotationStatusKey]
-
-	if strings.ToLower(status) == "mutated" {
-		required = false
-	}
-
-	glog.Infof("Mutation policy for %v/%v: required:%v", metadata.Namespace, metadata.Name, required)
-	return required
-}
-
-func admissionRequired(ignoredList []string, admissionAnnotationKey string, metadata *metav1.ObjectMeta) bool {
-	// skip special kubernetes system namespaces
-	for _, namespace := range ignoredList {
-		if metadata.Namespace == namespace {
-			glog.Infof("Skip validation for %v for it's in special namespace:%v", metadata.Name, metadata.Namespace)
-			return false
-		}
-	}
-
-	annotations := metadata.GetAnnotations()
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
-
-	var required bool
-	switch strings.ToLower(annotations[admissionAnnotationKey]) {
-	default:
-		required = true
-	case "n", "no", "false", "off":
-		required = false
-	}
-	return required
-}
-
-func applyDefaultsWorkaround(containers []corev1.Container, volumes []corev1.Volume) {
-	defaulter.Default(&corev1.Pod{
-		Spec: corev1.PodSpec{
-			Containers: containers,
-			Volumes:    volumes,
-		},
-	})
 }
 
 func createPatch(availableAnnotations map[string]string, annotations map[string]string) ([]byte, error) {

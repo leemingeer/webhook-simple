@@ -18,5 +18,5 @@ deploy:
 
 .PHONY: test
 test:
-	kubectl delete -f dp.yaml
-	kubectl apply -f dp.yaml
+	kubectl delete -f example/nginx.yaml
+	kubectl apply -f example/nginx.yaml
