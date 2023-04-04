@@ -2,11 +2,11 @@
 ## webhook simple
 
 ### 简介
-`webhook server`关键流程是通过`http.Server()`对象的`Handler`实现。当request到来，`webhook server`根据apiserver发过来的request中的path路由匹配到正确的自定义handler对象(实现ServeHttp接口)。
+`webhook server`关键流程是通过`http.Server()`对象的`Handler`串接。当`webhook server`收到`kube-apiserver`动态准入控制器发过来的`admission review request`, 其中的path路由匹配到注册到mux的自定义handler对象， 调用其`ServeHttp()`来实现。
 
-go内置http包内置了`http.Server`的Handler实现: `NewServeMux`(简称`mux`),可将多路自定义handler对象（实现ServeHttp方法）注册到mux的api路由中, mux匹配路由call handler的ServeHttp。
+http包内置了`http.Server`的Handler实现: `NewServeMux`(简称`mux`), 可将多路自定义handler对象（实现ServeHttp方法）注册到mux的api路由中.
+
 `mux`对外暴露`Handle`和`HandleFunc`两种方式，
-
 - Handle方式 
   - 将handler注册到mux, 有ServeHttp方法的对象才可以称为handler。
 - HandleFunc方式

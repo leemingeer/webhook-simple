@@ -93,4 +93,4 @@ CA_BUNDLE=$(base64 < ${TMPDIR}/server-cert.pem  | tr -d '\n')
 sed "s/CA_BUNDLE_PLACEMENT/${CA_BUNDLE}/" ${ROOT}/deploy/webhook.yaml.tpl > ${WEBHOOK_FILE_OUT}
 
 # clean-up
-# rm -rf ${TMPDIR}
+rm -rf ${TMPDIR}
